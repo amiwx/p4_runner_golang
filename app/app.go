@@ -59,6 +59,7 @@ func (a *App) setRouters() {
 	a.Get("/runs", a.GetAllRuns)
 	a.Get("/runs/{runid}", a.GetRun)
 	a.Get("/start_run", a.StartRun)
+	a.Get("/show_runs", a.ShowRuns)
 
 	// Posits Routers
 	// a.Get("/posits", a.GetAllPosits)
@@ -97,6 +98,9 @@ func (a *App) GetRun(w http.ResponseWriter, r *http.Request) {
 
 func (a *App) StartRun(w http.ResponseWriter, r *http.Request) {
 	handler.StartRun(a.DB, w, r, a.P4Config)
+}
+func (a *App) ShowRuns(w http.ResponseWriter, r *http.Request) {
+	handler.ShowRuns(a.DB, w, r)
 }
 
 // not related to other Run

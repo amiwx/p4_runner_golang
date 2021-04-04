@@ -3,12 +3,14 @@ package handler
 import (
 	"net/http"
 	"strconv"
+	"text/template"
 
 	"github.com/amiwx/p4_runner_golang/app/model"
 	"github.com/amiwx/p4_runner_golang/app/process"
 	"github.com/amiwx/p4_runner_golang/config"
 	"github.com/gorilla/mux"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 func GetAllRuns(db *gorm.DB, w http.ResponseWriter, r *http.Request) {
@@ -43,8 +45,43 @@ func StartRun(db *gorm.DB, w http.ResponseWriter, r *http.Request, p4Config *con
 		return
 	}
 	// fmt.Printf("%v+", run)
-	db.Create(&run)
+
+	db.Clauses(
+		clause.OnConflict{
+			UpdateAll: true,
+		},
+	).Create(&run)
 	respondJSON(w, http.StatusOK, run)
+
+}
+
+func ShowRuns(db *gorm.DB, w http.ResponseWriter, r *http.Request) {
+	runs := []model.Run{}
+	page, err := strconv.Atoi(r.FormValue("page"))
+	if err != nil {
+		// respondError(w, http.StatusBadRequest, err.Error())
+		page = 1
+	}
+
+	db.Scopes(Paginate(r)).Find(&runs)
+
+	template, err := template.ParseFiles("app/handler/templates/showRuns.html")
+	if err != nil {
+		respondError(w, http.StatusInternalServerError, err.Error())
+	}
+
+	prevPage := page
+	if prevPage > 1 {
+		prevPage = page - 1
+	}
+	err = template.Execute(w, struct {
+		RunArr   []model.Run
+		NextPage int
+		PrevPage int
+	}{runs, page + 1, prevPage})
+	if err != nil {
+		respondError(w, http.StatusInternalServerError, err.Error())
+	}
 
 }
 
